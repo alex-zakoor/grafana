@@ -72,6 +72,11 @@ describe('AppChrome', () => {
     expect(await screen.findByRole('link', { name: 'Skip to main content' })).toBeInTheDocument();
   });
 
+  it('should render the theme toggle in the top navigation', async () => {
+    setup(<Page navId="child1">Children</Page>);
+    expect(await screen.findByRole('button', { name: 'Toggle theme' })).toBeInTheDocument();
+  });
+
   it('should focus the skip link on initial tab before carrying on with normal tab order', async () => {
     setup(<Page navId="child1">Children</Page>);
     await userEvent.keyboard('{tab}');
