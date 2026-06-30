@@ -299,5 +299,31 @@ describe('SharedPreferencesFunctional', () => {
       expect(screen.queryByRole('heading', { name: 'Leave page?' })).not.toBeInTheDocument();
       expect(locationService.getLocation().pathname).toBe('/dashboards');
     });
+
+    it('blocks navigation when user has no saved preferences yet', async () => {
+      server.use(
+        preferencesHandlers.listPreferencesHandler(
+          HttpResponse.json({
+            metadata: {},
+            items: [],
+          })
+        )
+      );
+
+      const { user } = await setup();
+
+      await selectComboboxOptionInTest(await screen.findByRole('combobox', { name: 'Week start' }), 'Saturday');
+      await navigateAway();
+
+      expect(await screen.findByRole('heading', { name: 'Leave page?' })).toBeInTheDocument();
+      expect(locationService.getLocation().pathname).toBe('/profile');
+
+      await user.click(screen.getByRole('button', { name: 'Discard unsaved changes' }));
+
+      await waitFor(() => {
+        expect(locationService.getLocation().pathname).toBe('/dashboards');
+      });
+      expect(await screen.findByRole('combobox', { name: 'Week start' })).toHaveValue('Default');
+    });
   });
 });

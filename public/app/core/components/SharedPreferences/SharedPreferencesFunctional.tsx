@@ -68,12 +68,24 @@ export const SharedPreferencesFunctional = memo((props: Props) => {
 
   //TODO - stop copying API in a separate state, use react form hooks instead
   useEffect(() => {
-    if (prefs) {
-      setState(prefs);
-      setLoadedPrefs(prefs);
-      loadedRuntimeThemeIdRef.current = prefs.theme || config.theme2.id;
+    if (isLoading) {
+      return;
     }
-  }, [prefs]);
+
+    const loaded: PrefsState = prefs ?? {
+      theme: '',
+      timezone: '',
+      weekStart: '',
+      language: '',
+      queryHistory: { homeTab: '' },
+      navbar: { bookmarkUrls: [] },
+      homeDashboardUID: '',
+    };
+
+    setState(loaded);
+    setLoadedPrefs(loaded);
+    loadedRuntimeThemeIdRef.current = loaded.theme || config.theme2.id;
+  }, [prefs, isLoading]);
 
   const isDirty = useMemo(
     () => !isLoading && loadedPrefs !== null && !arePreferencesEqual(state, loadedPrefs),
