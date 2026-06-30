@@ -1,8 +1,8 @@
 {
-  "name": "Grafana frontend (Cloud Agent)",
+  "name": "Grafana full dev (Cloud Agent)",
   "build": {
-    "dockerfile": "Dockerfile",
+    "dockerfile": "Dockerfile.full",
     "context": ".."
   },
-  "install": "corepack enable && yarn install --immutable"
+  "install": "corepack enable && yarn install --immutable && (command -v go >/dev/null 2>&1 && go mod download || true)"
 }

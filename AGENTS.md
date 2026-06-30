@@ -162,9 +162,15 @@ Build a specific plugin: `yarn workspace @grafana-plugins/<name> dev`
 
 ### Cloud Agent environment
 
-The committed `.cursor/environment.json` uses a **frontend-only** Docker image (`node:24.11.0-bookworm`) so Cloud Agent builds do not download Go from go.dev (which often fails in remote build networks). This is sufficient for frontend tickets like ALE-21 (unit tests via Jest/MSW).
+The committed `.cursor/environment.json` uses the **full** dev image (`.cursor/Dockerfile.full`: Go 1.26.4 + Node 24.11.0) so Cloud Agents can run both the backend (`make run`) and frontend (`yarn start`). The `dl.google.com` and `nodejs.org` hosts are in the Cloud Agent egress allowlist, so the Go/Node downloads in `Dockerfile.full` succeed.
 
-For tasks that need `make run`, switch `environment.json` to use `Dockerfile.full` and add `go mod download` back to the install command.
+A frontend-only image still lives at `.cursor/Dockerfile` (`node:24.11.0-bookworm`); switch `environment.json` back to it (and drop `go mod download` from `install`) if a task is purely frontend and you want faster builds (e.g. ALE-21 unit tests via Jest/MSW).
+
+Notes for running services in this environment:
+
+- A `/exec-daemon/node` shim (Node v22) sits ahead of nvm on `PATH`. For `yarn start` / `make run`, prepend the Node 24 bin first: `export PATH="$(dirname "$(nvm which 24.11.0)"):$PATH"` (or run `nvm use` in the shell). Node 22 satisfies `engines` for `yarn install`, but use Node 24 to match `.nvmrc` when running the app.
+- Run the backend and frontend in **separate** long-lived shells (e.g. tmux): `make run` (backend, hot-reload, ~3 min first build) and `yarn start` (frontend webpack watch, ~1 min first compile). The backend serves the UI on `localhost:3000` once the frontend has compiled assets into `public/build`.
+- Outbound calls to `grafana.com` are blocked by egress, so logs show harmless errors (update checks, plugin manifest keys, News/RSS panel). These do not affect local functionality.
 
 ### Testing gotchas
 
