@@ -20,6 +20,18 @@ export type State = UserPreferencesDTO & {
 
 export type PrefsState = UserPreferencesDTO;
 
+export const arePreferencesEqual = (a: PrefsState, b: PrefsState): boolean => {
+  return (
+    a.theme === b.theme &&
+    a.timezone === b.timezone &&
+    a.weekStart === b.weekStart &&
+    a.language === b.language &&
+    a.homeDashboardUID === b.homeDashboardUID &&
+    (a.queryHistory?.homeTab ?? '') === (b.queryHistory?.homeTab ?? '') &&
+    JSON.stringify(a.navbar?.bookmarkUrls ?? []) === JSON.stringify(b.navbar?.bookmarkUrls ?? [])
+  );
+};
+
 const compareStrings = (() => {
   let collator: Intl.Collator | undefined;
 

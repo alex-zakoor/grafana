@@ -1,10 +1,10 @@
 import { useBooleanFlagValue } from '@openfeature/react-sdk';
-import { memo, useState, useEffect } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { FeatureState } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { t, Trans } from '@grafana/i18n';
-import { reportInteraction } from '@grafana/runtime';
+import { config, reportInteraction } from '@grafana/runtime';
 import {
   Alert,
   Box,
@@ -22,6 +22,7 @@ import {
   type WeekStart,
   WeekStartPicker,
 } from '@grafana/ui';
+import { FormPrompt } from 'app/core/components/FormPrompt/FormPrompt';
 import { changeTheme } from 'app/core/services/theme';
 
 import { DashboardPicker } from '../Select/DashboardPicker';
@@ -29,7 +30,7 @@ import { getSelectableThemes } from '../ThemeSelector/getSelectableThemes';
 
 import { languageChanged, saveButtonClicked, themeChanged } from './analytics/main';
 import { useSharedPreferences } from './useSharedPreferences';
-import { getLanguageOptions, getStyles, getTranslatedThemeName, type PrefsState, type Props } from './utils';
+import { getLanguageOptions, getStyles, getTranslatedThemeName, arePreferencesEqual, type PrefsState, type Props } from './utils';
 
 export const SharedPreferencesFunctional = memo((props: Props) => {
   const { resourceUri } = props;
@@ -47,6 +48,8 @@ export const SharedPreferencesFunctional = memo((props: Props) => {
     navbar: { bookmarkUrls: [] },
     homeDashboardUID: '',
   });
+  const [loadedPrefs, setLoadedPrefs] = useState<PrefsState | null>(null);
+  const loadedRuntimeThemeIdRef = useRef('');
 
   const themes = getSelectableThemes();
   const styles = useStyles2(getStyles);
@@ -65,10 +68,39 @@ export const SharedPreferencesFunctional = memo((props: Props) => {
 
   //TODO - stop copying API in a separate state, use react form hooks instead
   useEffect(() => {
-    if (prefs) {
-      setState(prefs);
+    if (isLoading) {
+      return;
     }
-  }, [prefs]);
+
+    const loaded: PrefsState = prefs ?? {
+      theme: '',
+      timezone: '',
+      weekStart: '',
+      language: '',
+      queryHistory: { homeTab: '' },
+      navbar: { bookmarkUrls: [] },
+      homeDashboardUID: '',
+    };
+
+    setState(loaded);
+    setLoadedPrefs(loaded);
+    loadedRuntimeThemeIdRef.current = loaded.theme || config.theme2.id;
+  }, [prefs, isLoading]);
+
+  const isDirty = useMemo(
+    () => !isLoading && loadedPrefs !== null && !arePreferencesEqual(state, loadedPrefs),
+    [isLoading, loadedPrefs, state]
+  );
+
+  const onDiscard = useCallback(() => {
+    if (!loadedPrefs) {
+      return;
+    }
+
+    setState(loadedPrefs);
+    const themeToRestore = loadedPrefs.theme || loadedRuntimeThemeIdRef.current;
+    changeTheme(themeToRestore, true);
+  }, [loadedPrefs]);
 
   const handleSubmitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -156,6 +188,7 @@ export const SharedPreferencesFunctional = memo((props: Props) => {
 
   return (
     <form onSubmit={handleSubmitForm} className={styles.form}>
+      <FormPrompt confirmRedirect={isDirty} onDiscard={onDiscard} />
       {isError && (
         <Alert severity="error" title={t('shared-preferences.error.get-preferences', 'Error loading preferences')} />
       )}
