@@ -1,26 +1,8 @@
 {
-  "name": "Grafana dev",
+  "name": "Grafana frontend (Cloud Agent)",
   "build": {
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "install": "corepack enable && yarn install --immutable && go mod download",
-  "terminals": [
-    {
-      "name": "backend",
-      "command": "make run",
-      "description": "Grafana backend with hot reload on localhost:3000 (admin/admin)."
-    },
-    {
-      "name": "frontend",
-      "command": "yarn start",
-      "description": "Webpack dev server; backend proxies frontend assets."
-    }
-  ],
-  "ports": [
-    {
-      "name": "grafana",
-      "port": 3000
-    }
-  ]
+  "install": "corepack enable && yarn install --immutable"
 }

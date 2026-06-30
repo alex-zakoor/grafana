@@ -160,8 +160,18 @@ Build a specific plugin: `yarn workspace @grafana-plugins/<name> dev`
 - **Frontend**: `yarn start` — starts webpack dev server that watches for changes. The backend proxies to it. First compile takes ~45s.
 - No external databases required — Grafana uses embedded SQLite by default.
 
+### Cloud Agent environment
+
+The committed `.cursor/environment.json` uses a **frontend-only** Docker image (`node:24.11.0-bookworm`) so Cloud Agent builds do not download Go from go.dev (which often fails in remote build networks). This is sufficient for frontend tickets like ALE-21 (unit tests via Jest/MSW).
+
+For tasks that need `make run`, switch `environment.json` to use `Dockerfile.full` and add `go mod download` back to the install command.
+
 ### Testing gotchas
 
 - **Frontend tests**: The `yarn test` script includes `--watch` by default. Always use `yarn jest --no-watch` or add `--watchAll=false` to run tests once and exit.
 - **Backend tests**: Some packages (e.g. `pkg/api/`) have slow test compilation (~2 min) due to large dependency graphs. Use targeted test runs with `-run TestName` where possible.
 - All standard build/test/lint commands are documented in the Commands section above.
+
+### Cloud Agent tasks
+
+Task-specific launch prompts and verification steps live under `.cursor/cloud-agent/`. See `.cursor/cloud-agent/ale-21.md` for the unsaved-preferences task (ALE-21).

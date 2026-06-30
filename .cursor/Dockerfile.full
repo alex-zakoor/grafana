@@ -1,0 +1,45 @@
+# Full Grafana dev image (Go backend + Node frontend).
+# Use this if a Cloud Agent task needs `make run`. Swap into environment.json via:
+#   "dockerfile": "Dockerfile.full"
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    git \
+    sudo \
+    curl \
+    ca-certificates \
+    build-essential \
+    libsqlite3-dev \
+    make \
+    python3 \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV GO_VERSION=1.26.4
+RUN set -eux; \
+    ARCH="$(dpkg --print-architecture)"; \
+    GO_TAR="go${GO_VERSION}.linux-${ARCH}.tar.gz"; \
+    download_go() { \
+      curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors \
+        -o "/tmp/${GO_TAR}" "$1"; \
+    }; \
+    download_go "https://dl.google.com/go/${GO_TAR}" \
+      || download_go "https://go.dev/dl/${GO_TAR}"; \
+    tar -C /usr/local -xzf "/tmp/${GO_TAR}"; \
+    rm "/tmp/${GO_TAR}"
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+ENV NODE_VERSION=24.11.0
+RUN set -eux; \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "${ARCH}" in amd64) NODE_ARCH=x64 ;; arm64) NODE_ARCH=arm64 ;; *) exit 1 ;; esac; \
+    NODE_TAR="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
+    curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors \
+      -o "/tmp/${NODE_TAR}" "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TAR}"; \
+    tar -xJ -C /usr/local --strip-components=1 -f "/tmp/${NODE_TAR}"; \
+    rm "/tmp/${NODE_TAR}"
+RUN corepack enable
+
+WORKDIR /workspace

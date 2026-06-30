@@ -75,7 +75,10 @@ public/css/*.min.css
 .vs/
 .cursor/*
 !.cursor/Dockerfile
+!.cursor/Dockerfile.full
 !.cursor/environment.json
+!.cursor/cloud-agent/
+!.cursor/cloud-agent/**
 .devcontainer/
 .claude/
 
